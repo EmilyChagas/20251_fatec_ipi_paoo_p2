@@ -20,8 +20,18 @@ const funcoes = {
           dados: observacao
         }
     )
-  }
+  },
+  LembreteCriado: async (lembrete) => {
+        lembrete.status = lembrete.texto.length <= 50 ? 'importante' : 'comum'
+        await axios.post('http://192.168.68.110:10000/eventos', {
+          tipo: 'LembreteClassificado',
+          dados: lembrete
+        }
+      )
+    }
 }
+
+
 app.post('/eventos', async (req, res) => {
   try{
     const evento = req.body
