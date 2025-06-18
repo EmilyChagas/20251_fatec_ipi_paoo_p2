@@ -1,53 +1,70 @@
+
 const axios = require('axios')
 const express = require('express')
 const app = express()
 app.use(express.json())
-/*
-{
-  1: {
-    id: 1,
-    texto: "Ver um filme",
-    observacoes: [
-      {
-        id: 1001,
-        texto: "Entre 04 e 08h",
-        lembreteId: 1
-      },
-      {
-        id: 1002,
-        texto: "Fazer pipoca",
-        lembreteId: 1
-      }
-    ]
-  },
-  2: {
-    id: 2,
-    texto: "Fazer feira"
-  }
-}
-*/
+// {
+//   "usuarios": {
+//     "1": {
+//       "id": 1,
+//       "nome": "João",
+//        "endereco": "rua la de ca"
+//       "lembretes": {
+//         "1": {
+//           "id": 1,
+//           "texto": "Ver um filme",
+//           "usuarioId": 1,
+//           "observacoes": [
+//             {
+//               "id": 1001,
+//               "texto": "Entre 04 e 08h",
+//               "lembreteId": 1
+//             }
+//           ]
+//         }
+//       }
+//     }
+//   }
+// }
 const baseConsolidada = {}
 
 const funcoes = {
+  UsuarioCriado: async (usuario) => {
+    baseConsolidada.usuarios = { ...(baseConsolidada.usuarios || {}), [usuario.id]: { ...usuario, lembretes: {} } }
+  },
+
   LembreteCriado: async (lembrete) => {
-    baseConsolidada[lembrete.id] = lembrete
+    const usuario = { ...(baseConsolidada.usuarios?.[lembrete.usuarioId] || {}), id: lembrete.usuarioId }
+    usuario.lembretes = { ...(usuario.lembretes || {}), [lembrete.id]: { ...lembrete, observacoes: [] } }
+    baseConsolidada.usuarios = { ...(baseConsolidada.usuarios || {}), [lembrete.usuarioId]: usuario }
   },
+
   ObservacaoCriada: async (observacao) => {
-    const observacoes = baseConsolidada[observacao.lembreteId]['observacoes'] || []
-    observacoes.push(observacao)
-    baseConsolidada[observacao.lembreteId]['observacoes'] = observacoes
+    const lembrete = Object.values(baseConsolidada.usuarios || {})
+      .find(u => u?.lembretes?.[observacao.lembreteId])
+      ?.lembretes?.[observacao.lembreteId];
+    
+    if (lembrete) {
+      lembrete.observacoes = [...(lembrete.observacoes || []), observacao]
+    } else {
+      console.error('Lembrete não encontrado')
+    }
   },
+
   ObservacaoAtualizada: async (observacao) => {
-    //atualizar a base consolidada
-    const observacoes = baseConsolidada[observacao.lembreteId]['observacoes']
-    const indice = observacoes.findIndex(o => o.id === observacao.id)
-    observacoes[indice] = observacao
+    const lembrete = Object.values(baseConsolidada.usuarios || {})
+      .find(u => u?.lembretes?.[observacao.lembreteId])
+      ?.lembretes?.[observacao.lembreteId];
+    
+    if (!lembrete) return console.error('Lembrete não encontrado')
+    
+    const indice = (lembrete.observacoes || []).findIndex(o => o.id === observacao.id)
+    if (indice !== -1) lembrete.observacoes[indice] = observacao;
   }
-  
 }
+
 //endpoint para obtenção da base consolidada (o front end usa)
-app.get('/lembretes', (req, res) => {
-  //devolver a base consolidada como json, use o objeto res
+app.get('/usuarios', (req, res) => {
   res.json(baseConsolidada)
 })
 //endpoint para receber eventos (o barramento usa)
@@ -66,7 +83,7 @@ app.post('/eventos', async (req, res) => {
 const port = 6000
 app.listen(port, async () => {
   console.log(`Consulta. Porta ${port}.`)
-  const resp = await axios.get('http://192.168.68.110:10000/eventos')
+  const resp = await axios.get('http://192.168.0.11:10000/eventos')
   resp.data.forEach((eventoPerdido) => {
     try{
       funcoes[eventoPerdido.tipo](eventoPerdido.dados)
