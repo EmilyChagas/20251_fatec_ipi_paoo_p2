@@ -6,6 +6,18 @@ let id = 0
 const lembretes = {
 }
 
+const funcoes = {
+  LembreteClassificado: async (lembrete) => {
+    const lembreteParaAtualizar = lembretes[lembrete.id]
+    lembreteParaAtualizar.status = lembrete.status
+    lembreteParaAtualizar.apropriado = lembrete.apropriado
+    await axios.post('http://192.168.0.11:10000/eventos', {
+      tipo: 'LembreteAtualizado',
+      dados: lembrete
+    })
+  }
+}
+
 //GET /lembretes () => {} (endpoint)
 app.get('/lembretes', (req, res) => {
   res.json(lembretes)
@@ -19,14 +31,16 @@ app.post('/lembretes', (req, res) => {
   //req tem uma propriedade chamada body
   //o body, por sua vez, é o objeto json enviado a partir da thunder
   // const texto = req.body.texto
-  const { texto } = req.body
+  const { texto, apropriado } = req.body
   lembretes[id] = {
     id,
-    texto
+    texto,
+    status: 'aguardando',
+    apropriado: apropriado || true
   }
-  axios.post('http://192.168.68.110:10000/eventos', {
+  axios.post('http://192.168.0.11:10000/eventos', {
     tipo: 'LembreteCriado',
-    dados: {id, texto}
+    dados: {id, texto, apropriado: apropriado || true}
   })
   res.status(201).json(lembretes[id])
 })
@@ -37,6 +51,7 @@ app.post('/eventos', async (req, res) => {
   try{
     const evento = req.body
     console.log(evento)
+    await funcoes[evento.tipo](evento.dados)
   }
   catch(e){}
   finally{
