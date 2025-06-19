@@ -10,25 +10,25 @@ app.post('/eventos', async (req, res) => {
   const evento = req.body
   console.log(evento)
   //adicionar o evento da vez à lista de eventos perdidos
-  eventos.push(evento)
+    eventos.push(evento)
   try{
-    axios.post('http://192.168.0.11:4000/eventos', evento)
+    axios.post('http://192.168.1.124:8000/eventos', evento)
   }
   catch(e){}
   try{
-    axios.post('http://192.168.0.11:5000/eventos', evento)
+    axios.post('http://192.168.1.124:4000/eventos', evento)
   }
   catch(e){}
   try{
-    axios.post('http://192.168.0.11:6000/eventos', evento)
+    axios.post('http://192.168.1.124:5000/eventos', evento)
   }
   catch(e){}
   try{
-    axios.post('http://192.168.0.11:7000/eventos', evento)
+    axios.post('http://192.168.1.124:6000/eventos', evento)
   }
   catch(e){ }
-    try{
-    axios.post('http://192.168.0.11:8000/eventos', evento)
+  try{
+    axios.post('http://192.168.1.124:7000/eventos', evento)
   }
   catch(e){ }
   res.end()

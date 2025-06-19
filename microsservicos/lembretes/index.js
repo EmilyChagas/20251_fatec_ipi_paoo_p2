@@ -1,67 +1,79 @@
-const axios = require('axios')
-const express = require('express')
-const app = express()
-app.use(express.json())
-let id = 0
-const lembretes = {
-}
+const axios = require('axios');
+const express = require('express');
+const app = express();
+app.use(express.json());
 
+const lembretesPorUsuario = {};
+let id = 0;
+
+// Handlers de eventos
 const funcoes = {
   LembreteClassificado: async (lembrete) => {
-    const lembreteParaAtualizar = lembretes[lembrete.id]
-    lembreteParaAtualizar.status = lembrete.status
-    lembreteParaAtualizar.apropriado = lembrete.apropriado
-    await axios.post('http://192.168.0.11:10000/eventos', {
+    const lembretes = lembretesPorUsuario[lembrete.usuarioId] || [];
+    const lembreteParaAtualizar = lembretes.find(o => o.id === lembrete.id);
+    if (!lembreteParaAtualizar) {
+      console.log('Lembrete não encontrado para atualização.');
+      return;
+    }
+    lembreteParaAtualizar.status = lembrete.status;
+    lembreteParaAtualizar.apropriado = lembrete.apropriado;
+    await axios.post('http://192.168.1.124:10000/eventos', {
       tipo: 'LembreteAtualizado',
-      dados: lembrete
-    })
-  }
-}
+      dados: lembreteParaAtualizar
+    });
+  },
 
-//GET /lembretes () => {} (endpoint)
-app.get('/lembretes', (req, res) => {
-  res.json(lembretes)
-})
+  UsuarioCriado: async () => {
+    console.log('Evento UsuarioCriado recebido (ignorado em lembretes).');
+  },
 
-//POST /lembretes () => {} (endpoint)
-app.post('/lembretes', (req, res) => {
-  id = id + 1
-  //pegar o texto do corpo da requisição
-  //a requisição é o objeto req
-  //req tem uma propriedade chamada body
-  //o body, por sua vez, é o objeto json enviado a partir da thunder
-  // const texto = req.body.texto
-  const { texto, apropriado } = req.body
-  lembretes[id] = {
+  LembreteCriado: async () => {}
+};
+
+app.post('/usuarios/:usuarioId/lembretes', (req, res) => {
+  id = id + 1;
+  const { texto } = req.body;
+  const lembretesDoUsuario = lembretesPorUsuario[req.params.usuarioId] || [];
+
+  const lembrete = {
     id,
+    usuarioId: req.params.usuarioId,
     texto,
     status: 'aguardando',
-    apropriado: apropriado || true
-  }
-  axios.post('http://192.168.0.11:10000/eventos', {
+    apropriado: 'aguardando'
+  };
+
+  lembretesDoUsuario.push(lembrete);
+  lembretesPorUsuario[req.params.usuarioId] = lembretesDoUsuario;
+
+  axios.post('http://192.168.1.124:10000/eventos', {
     tipo: 'LembreteCriado',
-    dados: {id, texto, apropriado: apropriado || true}
-  })
-  res.status(201).json(lembretes[id])
-})
+    dados: lembrete
+  });
 
-//definir o endpoint da figura
-//ele deve exibir o evento e encerra o tratamento da requisição com res.end
+  res.status(201).json(lembrete);
+});
+
+app.get('/usuarios/:usuarioId/lembretes', (req, res) => {
+  res.json(lembretesPorUsuario[req.params.usuarioId] || []);
+});
+
 app.post('/eventos', async (req, res) => {
-  try{
-    const evento = req.body
-    console.log(evento)
-    await funcoes[evento.tipo](evento.dados)
-  }
-  catch(e){}
-  finally{
-    res.end()
-  }
-})
+  const { tipo, dados } = req.body;
+  console.log('Evento recebido em lembretes:', tipo);
 
-//localhost:porta
-const port = 4000
+  const funcao = funcoes[tipo];
+  if (typeof funcao === 'function') {
+    await funcao(dados);
+  } else {
+    console.log(`Nenhuma função para tratar o evento: ${tipo}`);
+  }
+
+  res.end();
+});
+
+const port = 4000;
 app.listen(port, () => {
-  console.log(`Lembretes. Porta ${port}.`)
-})
+  console.log(`lembretes. Porta ${port}.`);
+});
 

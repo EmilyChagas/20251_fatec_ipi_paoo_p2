@@ -8,22 +8,22 @@ app.use(express.json())
 {
   1: [
     {
-      lembreteId: 1,
+      lembretesId: 1,
       id: 1001,
       texto: 'Comprar abacate'
     },
   ]
 }
 */
-const observacoesPorLembrete = {}
+const observacoesPorlembretes = {}
 
 const funcoes = {
   ObservacaoClassificada: async (observacao) => {
-    const observacoes = observacoesPorLembrete[observacao.lembreteId]
+    const observacoes = observacoesPorlembretes[observacao.lembretesId]
     const obsParaAtualizar = observacoes.find( o => o.id === observacao.id)
     obsParaAtualizar.status = observacao.status
     obsParaAtualizar.apropriado = observacao.apropriado
-    await axios.post('http://192.168.0.11:10000/eventos', {
+    await axios.post('http://192.168.1.124:10000/eventos', {
       tipo: 'ObservacaoAtualizada',
       dados: observacao
     })
@@ -31,33 +31,33 @@ const funcoes = {
   }
 }
 
-//POST /lembretes/1/observacoes
-//POST /lembretes/2/observacoes
+//POST /lembretess/1/observacoes
+//POST /lembretess/2/observacoes
 app.post('/lembretes/:id/observacoes', (req, res) => {
   const idObs = uuidv4()
-  const { texto, apropriado } = req.body
-  const observacoesDoLembrete = observacoesPorLembrete[req.params.id] || []
+  const { texto } = req.body
+  const observacoesDolembretes = observacoesPorlembretes[req.params.id] || []
   const observacao = {
     id: idObs,
-    lembreteId: req.params.id,
+    lembretesId: req.params.id,
     texto,
     status: 'aguardando',
-    apropriado
+    apropriado: 'aguardando'
   }
-  observacoesDoLembrete.push(observacao)
+  observacoesDolembretes.push(observacao)
   //emitir um evento do tipo ObservacaoCriada, passando a observação associada ao campo dados
-  axios.post('http://192.168.0.11:10000/eventos', {
+  axios.post('http://192.168.1.124:10000/eventos', {
     tipo: 'ObservacaoCriada',
     dados: observacao
   })
-  observacoesPorLembrete[req.params.id] = observacoesDoLembrete
-  res.status(201).json(observacoesDoLembrete)
+  observacoesPorlembretes[req.params.id] = observacoesDolembretes
+  res.status(201).json(observacoesDolembretes)
 })
 
-//GET /lembretes/1/observacoes
-//GET /lembretes/2/observacoes
+//GET /lembretess/1/observacoes
+//GET /lembretess/2/observacoes
 app.get('/lembretes/:id/observacoes', function(req, res){
-  res.json(observacoesPorLembrete[req.params.id] || [])
+  res.json(observacoesPorlembretes[req.params.id] || [])
 })
 
 
