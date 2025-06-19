@@ -7,4 +7,4 @@
    | Herbert Carvalho    | 2040482322020 |
    | João Victor Pereira | 2040482312052 |
 
-Ps. Um commit saiu com (web), tentamos muda, mas não deu certo
+Ps. Um commit saiu com (web), tentamos mudar mas não deu certo
